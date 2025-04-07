@@ -1,6 +1,4 @@
 import { Router, Request, Response } from "express";
-import pool from './db';
-import { sticky_notes } from './types';
 
 
 const router = Router()
