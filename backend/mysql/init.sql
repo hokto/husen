@@ -1,0 +1,11 @@
+CREATE DATABASE IF NOT EXISTS fusen_db;
+USE fusen_db;
+
+CREATE TABLE IF NOT EXISTS sticky_notes (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  content TEXT NOT NULL,
+  position_x INT NOT NULL,
+  position_y INT NOT NULL,
+  is_deleted BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
