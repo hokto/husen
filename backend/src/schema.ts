@@ -5,9 +5,9 @@ export const FetchStickyNoteSchema = {
         list: z.array(z.object({
             id: z.number(),
             content: z.string(),
-            position_x: z.number(),
-            position_y: z.number(),
-            created_at: z.date(),
+            positionX: z.number(),
+            positionY: z.number(),
+            createdAt: z.date(),
         })),
     }),
 } as const;
