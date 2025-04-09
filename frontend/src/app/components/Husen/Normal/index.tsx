@@ -1,13 +1,20 @@
-import { HUSEN_TEXT_COLOR, NORMAL_HUSEN_HEIGHT, NORMAL_HUSEN_TEXT_SIZE, NORMAL_HUSEN_WIDTH } from "@/const";
+import {
+  HUSEN_TEXT_COLOR,
+  NORMAL_HUSEN_HEIGHT,
+  NORMAL_HUSEN_TEXT_SIZE,
+  NORMAL_HUSEN_WIDTH,
+} from "@/const";
 import { NormalHusenProps } from "@/types/NormalHusen";
+
+// tailwind用
 const classNamesListToStr = (...classes: string[]) => {
   return classes.filter(Boolean).join(" ");
 };
 
-const Husen = (husenProps : NormalHusenProps) => {
-    const {width,height,bgColor,textColor,textSize,content} = husenProps;
-    const fontSize = textSize ? `${textSize}px` : NORMAL_HUSEN_TEXT_SIZE;
-    return (
+const Husen = (husenProps: NormalHusenProps) => {
+  const { width, height, bgColor, textColor, textSize, content } = husenProps;
+  const fontSize = textSize ? `${textSize}px` : NORMAL_HUSEN_TEXT_SIZE;
+  return (
     <div
       className={classNamesListToStr(
         "relative",
@@ -19,10 +26,10 @@ const Husen = (husenProps : NormalHusenProps) => {
       )}
       style={{
         width: `${width || NORMAL_HUSEN_WIDTH}px`,
-        height:`${height || NORMAL_HUSEN_HEIGHT}px`,
+        height: `${height || NORMAL_HUSEN_HEIGHT}px`,
         backgroundColor: bgColor,
         color: textColor || HUSEN_TEXT_COLOR,
-        fontSize
+        fontSize,
       }}
     >
       <div
