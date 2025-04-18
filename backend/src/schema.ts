@@ -1,6 +1,19 @@
 import { z } from "zod";
+import { extendZodWithOpenApi } from "@asteasolutions/zod-to-openapi";
 
-export const FetchStickyNoteSchema = {
+extendZodWithOpenApi(z);
+
+export type SchemaType = {
+    params: z.ZodObject<any>;
+    body: z.ZodObject<any>;
+    response: z.ZodTypeAny;
+};
+
+export type Method = "get" | "post" | "put" | "delete";
+
+export const FetchStickyNoteSchema: SchemaType = {
+    params: z.object({}),
+    body: z.object({}),
     response: z.object({
         list: z.array(z.object({
             id: z.number(),
@@ -12,15 +25,17 @@ export const FetchStickyNoteSchema = {
     }),
 } as const;
 
-export const CreateStickyNoteSchema = {
+export const CreateStickyNoteSchema: SchemaType = {
+    params: z.object({}),
     body: z.object({
         content: z.string(),
         positionX: z.number(),
         positionY: z.number(),
     }),
+    response: z.object({}),
 } as const;
 
-export const UpdateStickyNoteSchema = {
+export const UpdateStickyNoteSchema: SchemaType = {
     params: z.object({
         id: z.string(),
     }),
@@ -29,10 +44,47 @@ export const UpdateStickyNoteSchema = {
         positionX: z.number(),
         positionY: z.number(),
     }),
+    response: z.object({}),
 } as const;
 
-export const DeleteStickyNoteSchema = {
+export const DeleteStickyNoteSchema: SchemaType = {
     params: z.object({
         id: z.string(),
     }),
+    body: z.object({}),
+    response: z.object({}),
 } as const;
+
+export type SchemaObjectType = {
+    method: Method;
+    path: string;
+    schema: SchemaType;
+    statusCode: 200 | 201 | 204;
+};
+
+export const openAPISchemas: SchemaObjectType[] = [
+    {
+        method: "get",
+        path: "/sticky-notes",
+        schema: FetchStickyNoteSchema,
+        statusCode: 200,
+    },
+    {
+        method: "post",
+        path: "/sticky-notes",
+        schema: CreateStickyNoteSchema,
+        statusCode: 201,
+    },
+    {
+        method: "put",
+        path: "/sticky-notes/{id}",
+        schema: UpdateStickyNoteSchema,
+        statusCode: 204,
+    },
+    {
+        method: "delete",
+        path: "/sticky-notes/{id}",
+        schema: DeleteStickyNoteSchema,
+        statusCode: 204,
+    },
+];
