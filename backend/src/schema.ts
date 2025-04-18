@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { extendZodWithOpenApi } from "@asteasolutions/zod-to-openapi";
+import { statusCode } from "./status";
 
 extendZodWithOpenApi(z);
 
@@ -67,24 +68,24 @@ export const openAPISchemas: SchemaObjectType[] = [
         method: "get",
         path: "/sticky-notes",
         schema: FetchStickyNoteSchema,
-        statusCode: 200,
+        statusCode: statusCode.OK,
     },
     {
         method: "post",
         path: "/sticky-notes",
         schema: CreateStickyNoteSchema,
-        statusCode: 201,
+        statusCode: statusCode.Created,
     },
     {
         method: "put",
         path: "/sticky-notes/{id}",
         schema: UpdateStickyNoteSchema,
-        statusCode: 204,
+        statusCode: statusCode.NoContent,
     },
     {
         method: "delete",
         path: "/sticky-notes/{id}",
         schema: DeleteStickyNoteSchema,
-        statusCode: 204,
+        statusCode: statusCode.NoContent,
     },
 ];
