@@ -12,7 +12,8 @@ const classNamesListToStr = (...classes: string[]) => {
 };
 
 const Husen = (husenProps: NormalHusenProps) => {
-  const { width, height, bgColor, textColor, textSize, content } = husenProps;
+  const { width, height, bgColor, textColor, textSize, content, handleClick } =
+    husenProps;
   const fontSize = textSize ? `${textSize}px` : NORMAL_HUSEN_TEXT_SIZE;
   return (
     <div
@@ -31,6 +32,7 @@ const Husen = (husenProps: NormalHusenProps) => {
         color: textColor || HUSEN_TEXT_COLOR,
         fontSize,
       }}
+      onClick={handleClick}
     >
       <div
         className={classNamesListToStr(
