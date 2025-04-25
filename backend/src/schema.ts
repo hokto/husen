@@ -14,7 +14,7 @@ export type Method = "get" | "post" | "put" | "delete";
 
 export const FetchStickyNoteSchema: SchemaType = {
     params: z.object({
-        tagId: z.string().nullable(),
+        tagId: z.string().nullish(),
     }),
     body: z.object({}),
     response: z.object({
@@ -28,8 +28,8 @@ export const FetchStickyNoteSchema: SchemaType = {
             positionY: z.number(),
             createdAt: z.date(),
             tag: z.object({
-                id: z.number(),
-                name: z.string(),
+                id: z.number().nullable(),
+                name: z.string().nullable(),
             }),
         })),
     }),
@@ -41,7 +41,7 @@ export const CreateStickyNoteSchema: SchemaType = {
         content: z.string(),
         positionX: z.number(),
         positionY: z.number(),
-        tagName: z.string().optional(),
+        tagName: z.string().nullish(),
     }),
     response: z.object({}),
 } as const;
@@ -54,7 +54,7 @@ export const UpdateStickyNoteSchema: SchemaType = {
         content: z.string(),
         positionX: z.number(),
         positionY: z.number(),
-        tagName: z.string().optional(),
+        tagName: z.string().nullish(),
     }),
     response: z.object({}),
 } as const;
