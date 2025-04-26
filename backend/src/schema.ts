@@ -4,16 +4,31 @@ import { statusCode } from "./status";
 
 extendZodWithOpenApi(z);
 
-export type SchemaType = {
-    params: z.ZodObject<any>;
-    body: z.ZodObject<any>;
-    response: z.ZodTypeAny;
+
+
+export type SchemaType<
+    Params extends z.ZodTypeAny = z.ZodUnknown,
+    Query extends z.ZodTypeAny = z.ZodUnknown,
+    Body extends z.ZodTypeAny = z.ZodUnknown,
+    Response extends z.ZodTypeAny = z.ZodUnknown,
+> = {
+    params: Params;
+    query: Query;
+    body: Body;
+    response: Response;
 };
+
+const defineSchema = <Params extends z.ZodTypeAny, Query extends z.ZodTypeAny, Body extends z.ZodTypeAny, Response extends z.ZodTypeAny>(
+    schema: SchemaType<Params, Query, Body, Response>
+) => {
+    return schema;
+}
 
 export type Method = "get" | "post" | "put" | "delete";
 
-export const FetchStickyNoteSchema: SchemaType = {
-    params: z.object({
+export const FetchStickyNoteSchema = defineSchema({
+    params: z.object({}),
+    query: z.object({
         tagId: z.string().nullish(),
     }),
     body: z.object({}),
@@ -33,10 +48,11 @@ export const FetchStickyNoteSchema: SchemaType = {
             }).nullable(),
         })),
     }),
-} as const;
+});
 
-export const CreateStickyNoteSchema: SchemaType = {
+export const CreateStickyNoteSchema = defineSchema({
     params: z.object({}),
+    query: z.object({}),
     body: z.object({
         content: z.string(),
         positionX: z.number(),
@@ -48,10 +64,11 @@ export const CreateStickyNoteSchema: SchemaType = {
     }),
 } as const;
 
-export const UpdateStickyNoteSchema: SchemaType = {
+export const UpdateStickyNoteSchema = defineSchema({
     params: z.object({
         id: z.string(),
     }),
+    query: z.object({}),
     body: z.object({
         content: z.string(),
         positionX: z.number(),
@@ -59,24 +76,30 @@ export const UpdateStickyNoteSchema: SchemaType = {
         tagName: z.string().nullish(),
     }),
     response: z.object({}),
-} as const;
+});
 
-export const DeleteStickyNoteSchema: SchemaType = {
+export const DeleteStickyNoteSchema = defineSchema({
     params: z.object({
         id: z.string(),
     }),
+    query: z.object({}),
     body: z.object({}),
     response: z.object({}),
-} as const;
+});
 
-export type SchemaObjectType = {
+export type SchemaObjectType <
+    Params extends z.ZodTypeAny = z.ZodUnknown,
+    Query extends z.ZodTypeAny = z.ZodUnknown,
+    Body extends z.ZodTypeAny = z.ZodUnknown,
+    Response extends z.ZodTypeAny = z.ZodUnknown,
+> = {
     method: Method;
     path: string;
-    schema: SchemaType;
+    schema: SchemaType<Params, Query, Body, Response>;
     statusCode: 200 | 201 | 204;
 };
 
-export const openAPISchemas: SchemaObjectType[] = [
+export const openAPISchemas = [
     {
         method: "get",
         path: "/sticky-notes",
@@ -101,4 +124,4 @@ export const openAPISchemas: SchemaObjectType[] = [
         schema: DeleteStickyNoteSchema,
         statusCode: statusCode.NoContent,
     },
-];
+] as const satisfies readonly SchemaObjectType<any, any, any, any>[];

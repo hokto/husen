@@ -10,6 +10,7 @@ openAPISchemas.forEach(({ method, path, schema, statusCode }) => {
         summary: `Operation for ${method} ${path}`,
         request: {
             params: schema.params.openapi({}),
+            query: schema.query.openapi({}),
             body: {
                 content: {
                     "application/json": {
