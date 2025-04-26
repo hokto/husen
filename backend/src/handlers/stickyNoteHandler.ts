@@ -65,7 +65,7 @@ export const createStickyNotesHandler = async (req: Request, res: Response) => {
     const tag = {
         name: body.tagName,
     } as Tag;
-
+    let insertedStickyNoteId = null;
     const conn = await pool.getConnection();
     try {
         await conn.beginTransaction();
@@ -96,6 +96,7 @@ export const createStickyNotesHandler = async (req: Request, res: Response) => {
                 stickyNote.position_y,
             ],
         )
+        insertedStickyNoteId = insertedStickyNote.insertId;
         if (tag.name) {
             const [insertedTag] = await conn.query<ResultSetHeader>(
                 "insert into tags(name) values (?) on duplicate key update id = LAST_INSERT_ID(id)",
@@ -104,10 +105,11 @@ export const createStickyNotesHandler = async (req: Request, res: Response) => {
             await conn.query(
                 "insert into sticky_note_tags(sticky_note_id, tag_id) values (?, ?) on duplicate key update id = LAST_INSERT_ID(id), tag_id = values(tag_id)",
                 [
-                    insertedStickyNote.insertId,
+                    insertedStickyNoteId,
                     insertedTag.insertId,
                 ]
             )
+
         }
         await conn.commit();
     } catch (err) {
@@ -117,7 +119,9 @@ export const createStickyNotesHandler = async (req: Request, res: Response) => {
         conn.release();
     }
 
-    res.status(statusCode.Created).send();
+    res.status(statusCode.Created).json({
+        id: insertedStickyNoteId,
+    });
 };
 
 export const updateStickyNotesHandler = async (req: Request, res: Response) => {
