@@ -9,3 +9,11 @@ export type PutRequest = {
   positionX: number;
   positionY: number;
 };
+
+export type GetResponse = {
+  id: number;
+  content: string;
+  positionX: number;
+  positionY: number;
+  createAt: string;
+};

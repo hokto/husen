@@ -1,11 +1,12 @@
 "use client";
 import deleteStickNotes from "@/components/API/Delete";
+import getStickNotes from "@/components/API/Get";
 import postStickNotes from "@/components/API/Post";
 import putStickNotes from "@/components/API/Put";
 import Husen from "@/components/Husen/Normal";
 import ModalHusen from "@/components/Modal/AddHusen";
 import { HUSEN_BLUE_COLOR } from "@/const";
-import { PostRequest, PutRequest } from "@/types/API";
+import { GetResponse, PostRequest, PutRequest } from "@/types/API";
 import { DraggableHusenProps } from "@/types/DraggableHusen";
 import { createRef, RefObject, useEffect, useRef, useState } from "react";
 import Draggable, { DraggableData } from "react-draggable";
@@ -16,13 +17,31 @@ export const Home = () => {
   const [isModal, setIsModal] = useState(false);
   const [isTrashing, setIsTrashing] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const fetchStagedHusen = () => {
+    const promise = getStickNotes();
+    promise.then((response) => {
+      response.data.list.forEach((value: GetResponse) => {
+        setDraggableHusenList([
+          ...draggableHusenList,
+          {
+            bgColor: HUSEN_BLUE_COLOR,
+            content: value.content,
+            ref: createRef<HTMLDivElement>() as RefObject<HTMLDivElement>,
+            id: value.id.toString(),
+            positionX: value.positionX,
+            positionY: value.positionY,
+          },
+        ]);
+      });
+    });
+  };
   const handleClickTrash = () => {
     setIsTrashing(!isTrashing);
   };
   const handleHusenMouseOn = (clickedId: string) => {
     if (isTrashing) {
       const promise = deleteStickNotes(clickedId);
-      promise.then((response) => {
+      promise.then(() => {
         const newDraggableHusenList = draggableHusenList.filter(({ id }) => {
           return id != clickedId;
         });
@@ -44,7 +63,7 @@ export const Home = () => {
       positionY: dragElement.y,
     };
     console.log(request);
-    const promise = putStickNotes("1", request);
+    const promise = putStickNotes("3", request);
     // 正常に終わった場合，リスト内も変更する
     promise.then(() => {
       const newDraggableHusenList = draggableHusenList.map(
@@ -78,7 +97,7 @@ export const Home = () => {
           bgColor: HUSEN_BLUE_COLOR,
           content: content,
           ref: createRef<HTMLDivElement>() as RefObject<HTMLDivElement>,
-          id: "1", // 一旦手動で調整
+          id: "3", // 一旦手動で調整
           positionX: 0,
           positionY: 0,
         },
@@ -109,10 +128,13 @@ export const Home = () => {
         setIsModal(true);
       }
     };
-
     window.addEventListener("click", handleClick);
     return () => window.removeEventListener("click", handleClick);
   }, [isTrashing, isDragging]);
+  useEffect(() => {
+    setDraggableHusenList([]); // 初期化処理
+    fetchStagedHusen();
+  }, []);
   return (
     <div className="w-full h-full bg-gray-200 flex">
       {isModal && (
@@ -126,31 +148,34 @@ export const Home = () => {
       </div>
       <div className="w-full h-full">
         {draggableHusenList &&
-          draggableHusenList.map(({ bgColor, content, ref, id }) => (
-            <Draggable
-              nodeRef={ref}
-              key={id}
-              onStart={() => {
-                handleHusenMouseOn(id);
-              }}
-              onStop={(event, dragElement) => {
-                setTimeout(() => {
-                  handleHusenMouseOff(id, content, dragElement);
-                }, 100);
-              }}
-            >
-              <div
-                ref={ref}
-                className="block w-fit h-fit"
-                style={{
-                  border: `${isTrashing ? "5px dashed #f50000" : "none"}`,
-                  padding: `${isTrashing ? "10px" : "none"}`,
+          draggableHusenList.map(
+            ({ bgColor, content, ref, id, positionX, positionY }) => (
+              <Draggable
+                nodeRef={ref}
+                key={id}
+                onStart={() => {
+                  handleHusenMouseOn(id);
                 }}
+                onStop={(event, dragElement) => {
+                  setTimeout(() => {
+                    handleHusenMouseOff(id, content, dragElement);
+                  }, 100);
+                }}
+                defaultPosition={{ x: positionX, y: positionY }}
               >
-                <Husen bgColor={bgColor} content={content} />
-              </div>
-            </Draggable>
-          ))}
+                <div
+                  ref={ref}
+                  className="block w-fit h-fit"
+                  style={{
+                    border: `${isTrashing ? "5px dashed #f50000" : "none"}`,
+                    padding: `${isTrashing ? "10px" : "none"}`,
+                  }}
+                >
+                  <Husen bgColor={bgColor} content={content} />
+                </div>
+              </Draggable>
+            )
+          )}
       </div>
       <div
         className="fixed bottom-4 right-4 flex flex-col items-center space-y-1"
