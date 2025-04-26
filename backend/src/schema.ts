@@ -30,7 +30,7 @@ export const FetchStickyNoteSchema: SchemaType = {
             tag: z.object({
                 id: z.number().nullable(),
                 name: z.string().nullable(),
-            }),
+            }).nullable(),
         })),
     }),
 } as const;

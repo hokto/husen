@@ -46,10 +46,12 @@ export const fetchStickyNotesHandler = async (req: Request, res: Response) => {
                 positionX: it.sticky_notes.position_x!,
                 positionY: it.sticky_notes.position_y!,
                 createdAt: it.sticky_notes.created_at!,
-                tag: {
-                    id: it.tags.id,
-                    name: it.tags.name,
-                },
+                tag: it.tags.id
+                    ? {
+                        id: it.tags.id,
+                        name: it.tags.name,
+                    }
+                    : null,
             };
         }),
     } as z.infer<typeof FetchStickyNoteSchema.response>);
