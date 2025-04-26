@@ -43,7 +43,9 @@ export const CreateStickyNoteSchema: SchemaType = {
         positionY: z.number(),
         tagName: z.string().nullish(),
     }),
-    response: z.object({}),
+    response: z.object({
+        id: z.number(),
+    }),
 } as const;
 
 export const UpdateStickyNoteSchema: SchemaType = {
