@@ -1,10 +1,14 @@
 "use client";
+import deleteStickNotes from "@/components/API/Delete";
+import postStickNotes from "@/components/API/Post";
+import putStickNotes from "@/components/API/Put";
 import Husen from "@/components/Husen/Normal";
 import ModalHusen from "@/components/Modal/AddHusen";
 import { HUSEN_BLUE_COLOR } from "@/const";
+import { PostRequest, PutRequest } from "@/types/API";
 import { DraggableHusenProps } from "@/types/DraggableHusen";
 import { createRef, RefObject, useEffect, useRef, useState } from "react";
-import Draggable from "react-draggable";
+import Draggable, { DraggableData } from "react-draggable";
 export const Home = () => {
   const [draggableHusenList, setDraggableHusenList] = useState<
     DraggableHusenProps[]
@@ -15,17 +19,54 @@ export const Home = () => {
   const handleClickTrash = () => {
     setIsTrashing(!isTrashing);
   };
-  const handleHusenMouseOn = (clickedId?: number) => {
+  const handleHusenMouseOn = (clickedId: string) => {
     if (isTrashing) {
-      const newDraggableHusenList = draggableHusenList.filter(({ id }) => {
-        return id != clickedId;
+      const promise = deleteStickNotes(clickedId);
+      promise.then((response) => {
+        const newDraggableHusenList = draggableHusenList.filter(({ id }) => {
+          return id != clickedId;
+        });
+        setDraggableHusenList(newDraggableHusenList);
       });
-      setDraggableHusenList(newDraggableHusenList);
       return; // isDraggingをtrueにしない
     }
     setIsDragging(true);
   };
-  const handleHusenMouseOff = () => {
+  const handleHusenMouseOff = (
+    clickedId: string,
+    content: string,
+    dragElement: DraggableData
+  ) => {
+    if (isTrashing) return; // このときはputしない
+    const request: PutRequest = {
+      content: content,
+      positionX: dragElement.x,
+      positionY: dragElement.y,
+    };
+    console.log(request);
+    const promise = putStickNotes("1", request);
+    // 正常に終わった場合，リスト内も変更する
+    promise.then(() => {
+      const newDraggableHusenList = draggableHusenList.map(
+        (draggableHusen: DraggableHusenProps) => {
+          // ドラッグしたものの座標情報を変更する
+          if (draggableHusen.id == clickedId) {
+            const newDraggableHusen: DraggableHusenProps = {
+              bgColor: draggableHusen.bgColor,
+              content: draggableHusen.content,
+              ref: draggableHusen.ref,
+              id: draggableHusen.id,
+              positionX: dragElement.x,
+              positionY: dragElement.y,
+            };
+            return newDraggableHusen;
+          } else {
+            return draggableHusen;
+          }
+        }
+      );
+      setDraggableHusenList(newDraggableHusenList);
+    });
     setIsDragging(false);
   };
   const handleClickCloseModal = (content: string) => {
@@ -37,9 +78,20 @@ export const Home = () => {
           bgColor: HUSEN_BLUE_COLOR,
           content: content,
           ref: createRef<HTMLDivElement>() as RefObject<HTMLDivElement>,
-          id: Date.now(),
+          id: "1", // 一旦手動で調整
+          positionX: 0,
+          positionY: 0,
         },
       ]);
+      const request: PostRequest = {
+        content: content,
+        positionX: 0,
+        positionY: 0,
+      };
+      const promise = postStickNotes(request);
+      promise.then((response) => {
+        console.log(response);
+      });
     }
     setIsModal(false);
   };
@@ -81,8 +133,10 @@ export const Home = () => {
               onStart={() => {
                 handleHusenMouseOn(id);
               }}
-              onStop={() => {
-                setTimeout(handleHusenMouseOff, 100);
+              onStop={(event, dragElement) => {
+                setTimeout(() => {
+                  handleHusenMouseOff(id, content, dragElement);
+                }, 100);
               }}
             >
               <div
