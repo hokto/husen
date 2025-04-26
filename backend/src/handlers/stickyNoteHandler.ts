@@ -7,20 +7,51 @@ import {
     FetchStickyNoteSchema,
     UpdateStickyNoteSchema,
 } from "../schema";
-import { StickyNote } from "../types";
+import { StickyNote, StickyNoteTag, Tag } from "../types";
 import pool from "../db";
+import { ResultSetHeader, RowDataPacket } from "mysql2";
 
 export const fetchStickyNotesHandler = async (req: Request, res: Response) => {
-    const [result] = await pool.query<StickyNote[]>("select * from sticky_notes where is_deleted = 0");
+    const params = req.query as z.infer<typeof FetchStickyNoteSchema.params>;
+    const tagId = params.tagId;
+    const [result] = await pool.query<{
+        sticky_notes: StickyNote;
+        sticky_note_tags: StickyNoteTag;
+        tags: Tag;
+    }[] & RowDataPacket[]>(
+        {
+            sql: `
+                select * from sticky_notes
+                  left outer join sticky_note_tags on sticky_notes.id = sticky_note_tags.sticky_note_id
+                  left outer join tags on sticky_note_tags.tag_id = tags.id
+                where is_deleted = 0
+                  and sticky_note_tags.tag_id = ? or 1 = ?
+            `,
+            nestTables: true,
+        },
+        [
+            tagId ?? null,
+            !tagId,
+        ]
+    );
 
     res.json({
+        meta: {
+            count: result.length,
+        },
         list: result.map(it => {
             return {
-                id: it.id!,
-                content: it.content!,
-                positionX: it.position_x!,
-                positionY: it.position_y!,
-                createdAt: it.created_at!,
+                id: it.sticky_notes.id,
+                content: it.sticky_notes.content!,
+                positionX: it.sticky_notes.position_x!,
+                positionY: it.sticky_notes.position_y!,
+                createdAt: it.sticky_notes.created_at!,
+                tag: it.tags.id
+                    ? {
+                        id: it.tags.id,
+                        name: it.tags.name,
+                    }
+                    : null,
             };
         }),
     } as z.infer<typeof FetchStickyNoteSchema.response>);
@@ -33,10 +64,14 @@ export const createStickyNotesHandler = async (req: Request, res: Response) => {
         position_x: body.positionX,
         position_y: body.positionY,
     } as StickyNote;
-
+    const tag = {
+        name: body.tagName,
+    } as Tag;
+    let insertedStickyNoteId = null;
     const conn = await pool.getConnection();
     try {
         await conn.beginTransaction();
+
         const [stickyNotes] = await conn.query<StickyNote[]>(
             `
             select *
@@ -55,40 +90,85 @@ export const createStickyNotesHandler = async (req: Request, res: Response) => {
         if (stickyNotes.length > 0) {
             throw new CustomError(errorList.Error, "already exists");
         }
-        await conn.query(
-            "insert into sticky_notes(content, position_x, position_y) values (?, ?, ?)",
+        const [insertedStickyNote] = await conn.query<ResultSetHeader>(
+            "insert into sticky_notes(content, position_x, position_y) values (?, ?, ?) on duplicate key update id = LAST_INSERT_ID(id)",
             [
                 stickyNote.content,
                 stickyNote.position_x,
                 stickyNote.position_y,
             ],
         )
-        await conn.commit();
+        insertedStickyNoteId = insertedStickyNote.insertId;
+        if (tag.name) {
+            const [insertedTag] = await conn.query<ResultSetHeader>(
+                "insert into tags(name) values (?) on duplicate key update id = LAST_INSERT_ID(id)",
+                [ tag.name, ]
+            );
+            await conn.query(
+                "insert into sticky_note_tags(sticky_note_id, tag_id) values (?, ?) on duplicate key update id = LAST_INSERT_ID(id), tag_id = values(tag_id)",
+                [
+                    insertedStickyNoteId,
+                    insertedTag.insertId,
+                ]
+            )
 
-        res.status(statusCode.Created).send();
+        }
+        await conn.commit();
     } catch (err) {
         await conn.rollback();
         throw err;
     } finally {
         conn.release();
     }
+
+    res.status(statusCode.Created).json({
+        id: insertedStickyNoteId,
+    });
 };
 
 export const updateStickyNotesHandler = async (req: Request, res: Response) => {
     const params = req.params as z.infer<typeof UpdateStickyNoteSchema.params>;
     const body = req.body as z.infer<typeof UpdateStickyNoteSchema.body>;
+    const stickyNoteId = params.id;
+    const tag = {
+        name: body.tagName,
+    } as Tag;
 
-    await pool.query(
-        "update sticky_notes set ? where id = ?",
-        [
-            {
-                content: body.content,
-                position_x: body.positionX,
-                position_y: body.positionY,
-            },
-            params.id,
-        ]
-    );
+    const conn = await pool.getConnection();
+    try {
+        await conn.beginTransaction();
+
+        await conn.query(
+            "update sticky_notes set ? where id = ?",
+            [
+                {
+                    content: body.content,
+                    position_x: body.positionX,
+                    position_y: body.positionY,
+                },
+                stickyNoteId,
+            ]
+        );
+        if (tag.name) {
+            const [insertedTag] = await conn.query<ResultSetHeader>(
+                "insert into tags(name) values (?) on duplicate key update id = LAST_INSERT_ID(id)",
+                [ tag.name, ]
+            );
+            await conn.query(
+                "insert into sticky_note_tags(sticky_note_id, tag_id) values (?, ?) on duplicate key update id = LAST_INSERT_ID(id), tag_id = values(tag_id)",
+                [
+                    stickyNoteId,
+                    insertedTag.insertId,
+                ]
+            )
+        }
+        await conn.commit();
+    } catch (err) {
+        await conn.rollback();
+        throw err;
+    } finally {
+        conn.release();
+    }
 
     res.status(statusCode.NoContent).send();
 };
