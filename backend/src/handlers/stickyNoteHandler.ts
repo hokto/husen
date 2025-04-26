@@ -12,8 +12,8 @@ import pool from "../db";
 import { ResultSetHeader, RowDataPacket } from "mysql2";
 
 export const fetchStickyNotesHandler = async (req: Request, res: Response) => {
-    const params = req.query as z.infer<typeof FetchStickyNoteSchema.params>;
-    const tagId = params.tagId;
+    const query = req.query as z.infer<typeof FetchStickyNoteSchema.query>;
+    const tagId = query.tagId;
     const [result] = await pool.query<{
         sticky_notes: StickyNote;
         sticky_note_tags: StickyNoteTag;
