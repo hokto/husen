@@ -9,3 +9,4 @@ export {
   NORMAL_HUSEN_HEIGHT,
   NORMAL_HUSEN_TEXT_SIZE,
 } from "./Husen";
+export { BASE_API_URL } from "./API";

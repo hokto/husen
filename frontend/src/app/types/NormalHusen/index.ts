@@ -1,3 +1,5 @@
+import { MouseEventHandler } from "react";
+
 export type NormalHusenProps = {
   width?: number;
   height?: number;
@@ -5,4 +7,5 @@ export type NormalHusenProps = {
   textColor?: string;
   textSize?: number;
   content?: string;
+  handleClick?: MouseEventHandler;
 };
