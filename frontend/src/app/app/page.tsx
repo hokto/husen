@@ -1,8 +1,8 @@
 "use client";
-import deleteStickNotes from "@/components/API/Delete";
-import getStickNotes from "@/components/API/Get";
-import postStickNotes from "@/components/API/Post";
-import putStickNotes from "@/components/API/Put";
+import deleteStickNotes from "@/api/Delete";
+import getStickNotes from "@/api/Get";
+import postStickNotes from "@/api/Post";
+import putStickNotes from "@/api/Put";
 import Husen from "@/components/Husen/Normal";
 import ModalHusen from "@/components/Modal/AddHusen";
 import { HUSEN_BLUE_COLOR } from "@/const";
