@@ -9,13 +9,12 @@ import { HUSEN_BLUE_COLOR } from "@/const";
 import { GetResponse, PostRequest, PutRequest } from "@/types/API";
 import { DraggableHusenProps } from "@/types/DraggableHusen";
 import { createRef, RefObject, useEffect, useRef, useState } from "react";
-import Draggable, { DraggableData } from "react-draggable";
+import Draggable, { DraggableData, DraggableEvent } from "react-draggable";
 export const Home = () => {
   const [draggableHusenList, setDraggableHusenList] = useState<
     DraggableHusenProps[]
   >([]);
   const [isModal, setIsModal] = useState(false);
-  const [isTrashing, setIsTrashing] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [id, setId] = useState(1); // idをこちらで用意して対応
   const fetchStagedHusen = async () => {
@@ -39,28 +38,32 @@ export const Home = () => {
       });
     });
   };
-  const handleClickTrash = () => {
-    setIsTrashing(!isTrashing);
-  };
-  const handleHusenMouseOn = (clickedId: string) => {
-    if (isTrashing) {
-      const promise = deleteStickNotes(clickedId);
-      promise.then(() => {
-        const newDraggableHusenList = draggableHusenList.filter(({ id }) => {
-          return id != clickedId;
-        });
-        setDraggableHusenList(newDraggableHusenList);
+  const handleTrashHusen = (clickedId: string) => {
+    const promise = deleteStickNotes(clickedId);
+    promise.then(() => {
+      const newDraggableHusenList = draggableHusenList.filter(({ id }) => {
+        return id != clickedId;
       });
-      return; // isDraggingをtrueにしない
-    }
+      setDraggableHusenList(newDraggableHusenList);
+    });
+  };
+  const handleHusenMouseOn = () => {
     setIsDragging(true);
   };
   const handleHusenMouseOff = (
     clickedId: string,
     content: string,
+    dragEvent: DraggableEvent,
     dragElement: DraggableData
   ) => {
-    if (isTrashing) return; // このときはputしない
+    const target = dragEvent.target;
+    if (!(target instanceof Node)) return;
+    // 付箋を捨てる場合
+    if (trashRef.current?.contains(target)) {
+      handleTrashHusen(clickedId);
+      return;
+    }
+    // 捨てないで移動する場合
     const request: PutRequest = {
       content: content,
       positionX: dragElement.x,
@@ -125,9 +128,10 @@ export const Home = () => {
   };
   const husenAlignAreaRef = useRef<HTMLDivElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
+  const trashRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const handleClick = (event: MouseEvent) => {
-      if (isDragging || isTrashing) return; // 付箋を移動してるとき，付箋を捨てるときは反応させない
+      if (isDragging) return; // 付箋を移動してるとき，付箋を捨てるときは反応させない
       const target = event.target;
       if (!(target instanceof Node)) return;
       const excludeRefs = [husenAlignAreaRef, modalRef];
@@ -139,7 +143,7 @@ export const Home = () => {
     };
     window.addEventListener("click", handleClick);
     return () => window.removeEventListener("click", handleClick);
-  }, [isTrashing, isDragging]);
+  }, [isDragging]);
   useEffect(() => {
     setDraggableHusenList([]); // 初期化処理
     fetchStagedHusen();
@@ -162,24 +166,15 @@ export const Home = () => {
               <Draggable
                 nodeRef={ref}
                 key={id}
-                onStart={() => {
-                  handleHusenMouseOn(id);
-                }}
-                onStop={(event, dragElement) => {
+                onStart={handleHusenMouseOn}
+                onStop={(dragEvent, dragElement) => {
                   setTimeout(() => {
-                    handleHusenMouseOff(id, content, dragElement);
+                    handleHusenMouseOff(id, content, dragEvent, dragElement);
                   }, 100);
                 }}
                 defaultPosition={{ x: positionX, y: positionY }}
               >
-                <div
-                  ref={ref}
-                  className="block w-fit h-fit"
-                  style={{
-                    border: `${isTrashing ? "5px dashed #f50000" : "none"}`,
-                    padding: `${isTrashing ? "10px" : "none"}`,
-                  }}
-                >
+                <div ref={ref} className="block w-fit h-fit">
                   <Husen bgColor={bgColor} content={content} />
                 </div>
               </Draggable>
@@ -188,14 +183,7 @@ export const Home = () => {
       </div>
       <div
         className="fixed bottom-4 right-4 flex flex-col items-center space-y-1"
-        onClick={() => {
-          // true->falseの場合はモーダルが反応しないようにディレイを入れる
-          if (isTrashing) {
-            setTimeout(handleClickTrash, 100);
-          } else {
-            handleClickTrash();
-          }
-        }}
+        ref={trashRef}
       >
         {/* ゴミ箱のフタ */}
         <div className="w-16 h-2 bg-gray-800 rounded-t-md" />
