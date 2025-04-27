@@ -17,21 +17,25 @@ export const Home = () => {
   const [isModal, setIsModal] = useState(false);
   const [isTrashing, setIsTrashing] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
-  const fetchStagedHusen = () => {
+  const [id, setId] = useState(1); // idをこちらで用意して対応
+  const fetchStagedHusen = async () => {
     const promise = getStickNotes();
-    promise.then((response) => {
+    await promise.then((response) => {
       response.data.list.forEach((value: GetResponse) => {
-        setDraggableHusenList([
-          ...draggableHusenList,
-          {
-            bgColor: HUSEN_BLUE_COLOR,
-            content: value.content,
-            ref: createRef<HTMLDivElement>() as RefObject<HTMLDivElement>,
-            id: value.id.toString(),
-            positionX: value.positionX,
-            positionY: value.positionY,
-          },
-        ]);
+        // 即時反映させる
+        setDraggableHusenList((prevDraggableHusenList) => {
+          return [
+            ...prevDraggableHusenList,
+            {
+              bgColor: HUSEN_BLUE_COLOR,
+              content: value.content,
+              ref: createRef<HTMLDivElement>() as RefObject<HTMLDivElement>,
+              id: value.id.toString(),
+              positionX: value.positionX,
+              positionY: value.positionY,
+            },
+          ];
+        });
       });
     });
   };
@@ -63,29 +67,33 @@ export const Home = () => {
       positionY: dragElement.y,
     };
     console.log(request);
-    const promise = putStickNotes("3", request);
+    const promise = putStickNotes(clickedId, request);
     // 正常に終わった場合，リスト内も変更する
-    promise.then(() => {
-      const newDraggableHusenList = draggableHusenList.map(
-        (draggableHusen: DraggableHusenProps) => {
-          // ドラッグしたものの座標情報を変更する
-          if (draggableHusen.id == clickedId) {
-            const newDraggableHusen: DraggableHusenProps = {
-              bgColor: draggableHusen.bgColor,
-              content: draggableHusen.content,
-              ref: draggableHusen.ref,
-              id: draggableHusen.id,
-              positionX: dragElement.x,
-              positionY: dragElement.y,
-            };
-            return newDraggableHusen;
-          } else {
-            return draggableHusen;
+    promise
+      .then(() => {
+        const newDraggableHusenList = draggableHusenList.map(
+          (draggableHusen: DraggableHusenProps) => {
+            // ドラッグしたものの座標情報を変更する
+            if (draggableHusen.id == clickedId) {
+              const newDraggableHusen: DraggableHusenProps = {
+                bgColor: draggableHusen.bgColor,
+                content: draggableHusen.content,
+                ref: draggableHusen.ref,
+                id: draggableHusen.id,
+                positionX: dragElement.x,
+                positionY: dragElement.y,
+              };
+              return newDraggableHusen;
+            } else {
+              return draggableHusen;
+            }
           }
-        }
-      );
-      setDraggableHusenList(newDraggableHusenList);
-    });
+        );
+        setDraggableHusenList(newDraggableHusenList);
+      })
+      .catch((error) => {
+        console.log(error);
+      });
     setIsDragging(false);
   };
   const handleClickCloseModal = (content: string) => {
@@ -97,7 +105,7 @@ export const Home = () => {
           bgColor: HUSEN_BLUE_COLOR,
           content: content,
           ref: createRef<HTMLDivElement>() as RefObject<HTMLDivElement>,
-          id: "3", // 一旦手動で調整
+          id: id.toString(), // 一旦手動で調整
           positionX: 0,
           positionY: 0,
         },
@@ -110,6 +118,7 @@ export const Home = () => {
       const promise = postStickNotes(request);
       promise.then((response) => {
         console.log(response);
+        setId(id + 1); // postが成功すると1増やす
       });
     }
     setIsModal(false);
